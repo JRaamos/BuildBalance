@@ -1,0 +1,81 @@
+export const theme = {
+  colors: {
+    brand950: '#071D29',
+    brand900: '#0A2635',
+    brand800: '#113A49',
+    brand700: '#165363',
+    primary: '#0F9F91',
+    primaryHover: '#0B8177',
+    primarySoft: '#DDF4F0',
+    primarySubtle: '#EFF9F7',
+    accent: '#F2B84B',
+    accentSoft: '#FFF2D7',
+    text: '#102733',
+    textMuted: '#60737D',
+    textSubtle: '#8A9BA3',
+    canvas: '#F2F6F5',
+    canvasDeep: '#EAF1EF',
+    surface: '#FFFFFF',
+    surfaceMuted: '#F8FBFA',
+    border: '#DCE7E3',
+    borderStrong: '#C8D8D2',
+    success: '#197A5B',
+    successSoft: '#E2F3EC',
+    warning: '#91610B',
+    warningSoft: '#FFF0D1',
+    danger: '#C34743',
+    dangerSoft: '#FBE8E6',
+    white: '#FFFFFF',
+    onDark: '#E8F2F1',
+    onDarkMuted: '#9DB4BC',
+    chartGrid: '#E4ECE9',
+    chartBalance: '#D8E6E1',
+    overlay: 'rgba(7, 29, 41, 0.56)',
+    focusRing: 'rgba(15, 159, 145, 0.16)',
+    navHover: 'rgba(255, 255, 255, 0.07)',
+    navBorder: 'rgba(255, 255, 255, 0.10)',
+    navActive: 'rgba(44, 196, 181, 0.16)',
+  },
+  gradients: {
+    brand: 'linear-gradient(145deg, #071D29 0%, #0D3544 52%, #0B625F 100%)',
+    primary: 'linear-gradient(135deg, #13AD9E 0%, #0B8177 100%)',
+    accent: 'linear-gradient(135deg, #F8CB6D 0%, #EBAA30 100%)',
+    canvas:
+      'radial-gradient(circle at 8% 0%, rgba(15, 159, 145, 0.08), transparent 30%), linear-gradient(180deg, #F8FBFA 0%, #F2F6F5 38%)',
+    login:
+      'radial-gradient(circle at 15% 15%, rgba(44, 196, 181, 0.22), transparent 28%), radial-gradient(circle at 86% 78%, rgba(242, 184, 75, 0.13), transparent 25%), linear-gradient(145deg, #071D29 0%, #0D3544 55%, #0B625F 100%)',
+  },
+  shadows: {
+    xs: '0 1px 2px rgba(7, 29, 41, 0.04)',
+    sm: '0 8px 24px rgba(7, 29, 41, 0.07)',
+    md: '0 18px 44px rgba(7, 29, 41, 0.10)',
+    lg: '0 30px 80px rgba(7, 29, 41, 0.18)',
+    primary: '0 10px 24px rgba(15, 159, 145, 0.22)',
+  },
+  radii: {
+    sm: '10px',
+    md: '14px',
+    lg: '18px',
+    xl: '24px',
+    pill: '999px',
+  },
+  typography: {
+    body: "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif",
+    display: "'Outfit Variable', 'Outfit', system-ui, sans-serif",
+  },
+  motion: {
+    fast: '150ms ease',
+    normal: '220ms cubic-bezier(.2, .8, .2, 1)',
+  },
+} as const;
+
+export const chartPalette = [
+  theme.colors.primary,
+  theme.colors.accent,
+  theme.colors.brand700,
+  '#7BA69D',
+  '#C97868',
+  '#778F5E',
+] as const;
+
+export type AppTheme = typeof theme;
