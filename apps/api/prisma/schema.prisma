@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+}
+
+enum ProjectPermission {
+  VIEW
+  EDIT
+}
+
+enum ScopeStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  DEBIT_CARD
+  CREDIT_CARD
+  BANK_TRANSFER
+  BOLETO
+  OTHER
+}
+
+model User {
+  id                  String          @id @default(uuid())
+  name                String          @db.VarChar(120)
+  email               String          @unique @db.VarChar(180)
+  passwordHash        String
+  role                UserRole        @default(MANAGER)
+  status              UserStatus      @default(ACTIVE)
+  lastLoginAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  ownedProjects       Project[]       @relation("ProjectOwner")
+  projectAccesses     ProjectAccess[] @relation("AccessUser")
+  accessesCreated     ProjectAccess[] @relation("AccessCreator")
+  expensesCreated     Expense[]       @relation("ExpenseCreator")
+  expensesUpdated     Expense[]       @relation("ExpenseUpdater")
+  suppliers           Supplier[]
+  auditLogs           AuditLog[]      @relation("AuditActor")
+
+  @@index([email])
+}
+
+model Project {
+  id              String          @id @default(uuid())
+  ownerId         String
+  owner           User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  name            String          @db.VarChar(140)
+  description     String?         @db.VarChar(600)
+  totalBudget     Decimal         @db.Decimal(14, 2)
+  startDate       DateTime?
+  expectedEndDate DateTime?
+  status          ProjectStatus   @default(PLANNING)
+  notes           String?         @db.VarChar(2000)
+  archivedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  accesses        ProjectAccess[]
+  scopes          Scope[]
+  expenses        Expense[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model ProjectAccess {
+  id          String            @id @default(uuid())
+  projectId   String
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  userId      String
+  user        User              @relation("AccessUser", fields: [userId], references: [id], onDelete: Restrict)
+  permission  ProjectPermission
+  createdById String
+  createdBy   User              @relation("AccessCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Scope {
+  id            String      @id @default(uuid())
+  projectId     String
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  name          String      @db.VarChar(120)
+  description   String?     @db.VarChar(600)
+  plannedBudget Decimal     @db.Decimal(14, 2)
+  status        ScopeStatus @default(ACTIVE)
+  displayOrder  Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  expenses      Expense[]
+
+  @@index([projectId])
+}
+
+model Expense {
+  id             String         @id @default(uuid())
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  scopeId        String?
+  scope          Scope?         @relation(fields: [scopeId], references: [id], onDelete: Restrict)
+  description    String         @db.VarChar(180)
+  amount         Decimal        @db.Decimal(14, 2)
+  expenseDate    DateTime
+  categoryId     String?
+  category       Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplierId     String?
+  supplier       Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  paymentMethod  PaymentMethod?
+  paymentStatus  PaymentStatus  @default(PENDING)
+  documentNumber String?        @db.VarChar(80)
+  notes          String?        @db.VarChar(1200)
+  createdById    String
+  createdBy      User           @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById    String?
+  updatedBy      User?          @relation("ExpenseUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([scopeId])
+  @@index([expenseDate])
+  @@index([paymentStatus])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique @db.VarChar(100)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expenses  Expense[]
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name      String    @db.VarChar(140)
+  document  String?   @db.VarChar(24)
+  phone     String?   @db.VarChar(24)
+  email     String?   @db.VarChar(180)
+  notes     String?   @db.VarChar(1000)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expenses  Expense[]
+
+  @@index([ownerId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action     String   @db.VarChar(80)
+  entityType String   @db.VarChar(80)
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
