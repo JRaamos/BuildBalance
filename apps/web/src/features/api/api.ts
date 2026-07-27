@@ -44,8 +44,13 @@ export interface User {
   _count?: { ownedProjects: number; projectAccesses: number };
 }
 
+const apiBaseUrl = (
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? 'https://build-balance-api.vercel.app' : 'http://localhost:3000')
+).replace(/\/+$/, '');
+
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
+  baseUrl: apiBaseUrl,
   prepareHeaders(headers, { getState }) {
     const token = (getState() as RootState).auth.accessToken;
     if (token) headers.set('authorization', `Bearer ${token}`);
