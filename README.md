@@ -70,6 +70,45 @@ Consulte [`.env.example`](.env.example). As obrigatórias são:
 
 `SWAGGER_ENABLED=false` desativa a documentação da API em ambientes onde ela não deve ser pública.
 
+## Deploy na Vercel
+
+Crie dois projetos na Vercel usando este mesmo repositório:
+
+| Projeto | Root Directory | Framework |
+| --- | --- | --- |
+| API | `apps/api` | NestJS |
+| Frontend | `apps/web` | Vite |
+
+### API
+
+A API de produção usa `https://build-balance-api.vercel.app`. Configure no projeto da API:
+
+```dotenv
+DATABASE_URL=postgresql://...
+JWT_SECRET=uma-chave-longa-e-aleatoria
+JWT_EXPIRES_IN=1d
+CORS_ORIGIN=https://SEU-FRONTEND.vercel.app
+ALLOW_VERCEL_PREVIEWS=true
+SWAGGER_ENABLED=false
+```
+
+O PostgreSQL precisa ser hospedado e acessível pela internet; o container local do Docker não está disponível para uma função da Vercel. Prefira a URL com pool de conexões oferecida pelo provedor. O build gera o Prisma Client, aplica as migrations existentes e compila o NestJS.
+
+Depois do deploy, valide:
+
+- API: `https://build-balance-api.vercel.app/`
+- Saúde: `https://build-balance-api.vercel.app/health`
+
+### Frontend
+
+Configure no projeto do frontend:
+
+```dotenv
+VITE_API_URL=https://build-balance-api.vercel.app
+```
+
+O arquivo `apps/web/vercel.json` preserva as rotas da SPA ao acessar ou atualizar URLs internas diretamente. O frontend também usa a URL de produção acima como fallback de build; a variável continua recomendada para permitir ambientes de preview separados.
+
 ## Perfis e permissões
 
 - `ADMIN`: administra usuários, acessa todas as obras, compartilhamentos e auditoria.
