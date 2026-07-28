@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Edit3, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Edit3, Plus, Trash2 } from 'lucide-react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, NavLink, useLocation, useParams } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import styled from 'styled-components';
 import { z } from 'zod';
@@ -12,7 +12,8 @@ import {
 } from '../components/ui';
 import {
   useCancelExpenseMutation, useCreateExpenseMutation, useCreateScopeMutation, useExpensesQuery,
-  useProjectDashboardQuery, useProjectQuery, useScopesQuery
+  useCompleteProjectMutation, useDeleteProjectPermanentlyMutation, useProjectDashboardQuery,
+  useProjectQuery, useScopesQuery
 } from '../features/api/api';
 import type { DashboardData, Expense, Scope } from '../features/api/api';
 import { chartPalette, theme } from '../styles/theme';
@@ -44,23 +45,63 @@ const ModalActions=styled.footer`
   p{margin:0 auto 0 0;color:var(--danger);font-size:.82rem}
   @media(max-width:640px){bottom:-20px;margin:0 -20px -20px;padding:14px 20px 18px;button{width:100%}}
 `;
+const HeaderActions=styled.div`
+  display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+  @media(max-width:620px){justify-content:stretch;>button,>a{flex:1}}
+`;
+const ConfirmationNotice=styled.div<{ $danger?: boolean }>`
+  display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;margin-bottom:20px;padding:15px 16px;
+  color:${({$danger})=>$danger?'var(--danger)':'var(--teal-hover)'};
+  background:${({$danger})=>$danger?'var(--danger-soft)':'var(--teal-subtle)'};
+  border:1px solid ${({$danger})=>$danger?'color-mix(in srgb,var(--danger) 24%,transparent)':'var(--line)'};
+  border-radius:14px;
+  svg{margin-top:1px}strong{display:block;color:var(--navy);margin-bottom:4px}p{margin:0;font-size:.86rem;line-height:1.55;color:var(--muted)}
+`;
+const ConfirmationActions=styled.div`
+  display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);
+  @media(max-width:520px){flex-direction:column-reverse;button{width:100%}}
+`;
 
 export function ProjectDetailPage(){
-  const {projectId}=useParams<{projectId:string}>();const id=projectId!;const location=useLocation();const path=location.pathname;const tracking=new URLSearchParams(location.search).get('tracking')==='1';const trackingQuery=tracking?'?tracking=1':'';
+  const {projectId}=useParams<{projectId:string}>();const id=projectId!;const location=useLocation();const navigate=useNavigate();const path=location.pathname;const tracking=new URLSearchParams(location.search).get('tracking')==='1';const trackingQuery=tracking?'?tracking=1':'';
   const tab=path.endsWith('/scopes')?'scopes':path.endsWith('/expenses')?'expenses':path.endsWith('/reports')?'reports':'overview';
   const {data:project,isLoading:projectLoading,isError:projectError}=useProjectQuery(id);
   const {data:dashboard,isLoading:dashLoading,isError:dashError}=useProjectDashboardQuery(id);
   const {data:scopes=[]}=useScopesQuery(id);const {data:expenses}=useExpensesQuery(id);
   const [scopeOpen,setScopeOpen]=useState(false);const [expenseOpen,setExpenseOpen]=useState(false);
-  const canEdit=!tracking&&project?.access?.permission!=='VIEW'; const s=dashboard?.summary;
+  const [projectAction,setProjectAction]=useState<'complete'|'delete'|null>(null);
+  const canEdit=!tracking&&project?.access?.permission!=='VIEW';const isOwner=!tracking&&project?.access?.isOwner===true;const completed=project?.status==='COMPLETED';const s=dashboard?.summary;
   if(projectLoading||dashLoading)return <Page><LoadingState/></Page>;if(projectError||dashError||!project||!dashboard||!s)return <Page><ErrorState/></Page>;
-  return <Page><PageHeader><div><Button as={Link} to={tracking?'/admin/projects':'/projects'} $variant="ghost"><ArrowLeft size={17}/>{tracking?'Todas as obras':'Obras'}</Button><h1>{project.name}</h1><p>{project.owner.name} · {statusLabel[project.status]??project.status} · {tracking?'Somente acompanhamento':statusLabel[project.access?.permission??'']??project.access?.permission}</p></div>{canEdit&&<Button as={Link} to={`/projects/${id}/edit`} $variant="secondary"><Edit3 size={17}/>Editar obra</Button>}</PageHeader>
+  return <Page><PageHeader><div><Button as={Link} to={tracking?'/admin/projects':'/projects'} $variant="ghost"><ArrowLeft size={17}/>{tracking?'Todas as obras':'Obras'}</Button><h1>{project.name}</h1><p>{project.owner.name} · {statusLabel[project.status]??project.status} · {tracking?'Somente acompanhamento':statusLabel[project.access?.permission??'']??project.access?.permission}</p></div>{canEdit&&<HeaderActions><Button as={Link} to={`/projects/${id}/edit`} $variant="secondary"><Edit3 size={17}/>Editar obra</Button>{isOwner&&!completed&&<Button type="button" $variant="secondary" onClick={()=>setProjectAction('complete')}><CheckCircle2 size={17}/>Finalizar</Button>}{isOwner&&<Button type="button" $variant="danger" onClick={()=>setProjectAction('delete')}><Trash2 size={17}/>Excluir</Button>}</HeaderActions>}</PageHeader>
     <Tabs><NavLink end to={`/projects/${id}${trackingQuery}`}>Visão geral</NavLink><NavLink to={`/projects/${id}/scopes${trackingQuery}`}>Escopos</NavLink><NavLink to={`/projects/${id}/expenses${trackingQuery}`}>Gastos</NavLink><NavLink to={`/projects/${id}/reports${trackingQuery}`}>Relatórios</NavLink></Tabs>
     {tab==='overview'&&<Overview dashboard={dashboard}/>}
     {tab==='scopes'&&<><Section><header><div><h2>Distribuição por escopos</h2><p style={{color:'var(--muted)',margin:'5px 0 0'}}>Planejado: {formatMoney(s.plannedScopeBudget)} · não distribuído: {formatMoney(s.unallocatedBudget)}</p></div>{canEdit&&<Button onClick={()=>setScopeOpen(true)}><Plus size={17}/>Novo escopo</Button>}</header><Surface>{scopes.length?scopes.map(scope=><ScopeRow key={scope.id}><div><strong>{scope.name}</strong><small>{statusLabel[scope.status]??scope.status}</small><ProgressTrack><ProgressFill $value={scope.usagePercentage} $danger={scope.isOverBudget}/></ProgressTrack></div><div><small>Planejado</small><strong>{formatMoney(scope.plannedBudget)}</strong></div><div><small>Gasto</small><strong>{formatMoney(scope.totalExpenses)}</strong></div><div className="optional"><small>Saldo</small><strong style={{color:scope.isOverBudget?'var(--danger)':undefined}}>{formatMoney(scope.remainingBudget)}</strong></div></ScopeRow>):<EmptyState title="Sem escopos">Separe a reforma em áreas para acompanhar cada orçamento.</EmptyState>}</Surface></Section>{scopeOpen&&<ScopeDialog projectId={id} close={()=>setScopeOpen(false)}/>}</>}
     {tab==='expenses'&&<><Section><header><div><h2>Lançamentos</h2><p style={{color:'var(--muted)',margin:'5px 0 0'}}>Gastos cancelados permanecem no histórico e não entram nos cálculos.</p></div>{canEdit&&<Button onClick={()=>setExpenseOpen(true)}><Plus size={17}/>Novo gasto</Button>}</header><ExpensesTable items={expenses?.data??[]} editable={canEdit}/></Section>{expenseOpen&&<ExpenseDialog projectId={id} scopes={scopes} currentBalance={Number(s.remainingBudget)} close={()=>setExpenseOpen(false)}/>}</>}
     {tab==='reports'&&<Reports dashboard={dashboard}/>}
+    {projectAction==='complete'&&<CompleteProjectDialog projectId={id} projectName={project.name} close={()=>setProjectAction(null)}/>}
+    {projectAction==='delete'&&<DeleteProjectDialog projectId={id} projectName={project.name} close={()=>setProjectAction(null)} deleted={()=>navigate('/projects',{replace:true})}/>}
   </Page>;
+}
+
+function CompleteProjectDialog({projectId,projectName,close}:{projectId:string;projectName:string;close:()=>void}){
+  const [complete,{isLoading,error}]=useCompleteProjectMutation();
+  const submit=async()=>{try{await complete(projectId).unwrap();close();}catch{/* exibido */}};
+  return <DialogShell title="Finalizar obra" description={`Confirme a conclusão de “${projectName}”.`} close={close}>
+    <ConfirmationNotice><CheckCircle2 size={21}/><div><strong>O histórico será preservado</strong><p>A obra passará para o status concluída. Orçamento, escopos, gastos e relatórios continuarão disponíveis para consulta.</p></div></ConfirmationNotice>
+    {error&&<p style={{color:'var(--danger)'}}>Não foi possível finalizar a obra.</p>}
+    <ConfirmationActions><Button type="button" $variant="ghost" onClick={close}>Voltar</Button><Button type="button" disabled={isLoading} onClick={submit}>{isLoading?'Finalizando…':'Finalizar obra'}</Button></ConfirmationActions>
+  </DialogShell>;
+}
+
+function DeleteProjectDialog({projectId,projectName,close,deleted}:{projectId:string;projectName:string;close:()=>void;deleted:()=>void}){
+  const [confirmation,setConfirmation]=useState('');const [remove,{isLoading,error}]=useDeleteProjectPermanentlyMutation();const valid=confirmation.trim()===projectName;
+  const submit=async(e:FormEvent)=>{e.preventDefault();if(!valid)return;try{await remove({id:projectId,confirmation}).unwrap();deleted();}catch{/* exibido */}};
+  return <DialogShell title="Excluir obra permanentemente" description="Esta operação não pode ser desfeita." close={close}><form onSubmit={submit}>
+    <ConfirmationNotice $danger><AlertTriangle size={21}/><div><strong>Todos os registros desta obra serão apagados</strong><p>Escopos, gastos, acessos compartilhados e o histórico de auditoria vinculado à obra serão removidos permanentemente.</p></div></ConfirmationNotice>
+    <Field>Digite <strong>{projectName}</strong> para confirmar<input autoFocus autoComplete="off" value={confirmation} onChange={e=>setConfirmation(e.target.value)} placeholder={projectName}/></Field>
+    {error&&<p style={{color:'var(--danger)'}}>Não foi possível excluir a obra. Verifique a confirmação e tente novamente.</p>}
+    <ConfirmationActions><Button type="button" $variant="ghost" onClick={close}>Cancelar</Button><Button type="submit" $variant="danger" disabled={!valid||isLoading}><Trash2 size={17}/>{isLoading?'Excluindo…':'Excluir definitivamente'}</Button></ConfirmationActions>
+  </form></DialogShell>;
 }
 
 function Overview({dashboard}:{dashboard:DashboardData}){

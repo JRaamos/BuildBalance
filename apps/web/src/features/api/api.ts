@@ -87,6 +87,16 @@ export const api = createApi({
     updateProject: builder.mutation<Project, { id: string; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/projects/${id}`, method: 'PATCH', body }), invalidatesTags: ['Project', 'Dashboard']
     }),
+    completeProject: builder.mutation<Project, string>({
+      query: (id) => ({ url: `/projects/${id}/complete`, method: 'PATCH' }),
+      invalidatesTags: ['Project', 'Dashboard']
+    }),
+    deleteProjectPermanently: builder.mutation<{ message: string }, { id: string; confirmation: string }>({
+      query: ({ id, confirmation }) => ({
+        url: `/projects/${id}/permanent`, method: 'DELETE', body: { confirmation }
+      }),
+      invalidatesTags: ['Project', 'Dashboard', 'Scope', 'Expense', 'Access', 'Audit']
+    }),
     scopes: builder.query<Scope[], string>({ query: (projectId) => `/projects/${projectId}/scopes`, providesTags: ['Scope'] }),
     createScope: builder.mutation<Scope, { projectId: string; body: Record<string, unknown> }>({
       query: ({ projectId, body }) => ({ url: `/projects/${projectId}/scopes`, method: 'POST', body }), invalidatesTags: ['Scope', 'Dashboard']
@@ -151,6 +161,7 @@ export const api = createApi({
 export const {
   useLoginMutation, useChangePasswordMutation, useDashboardQuery, useProjectDashboardQuery,
   useProjectsQuery, useProjectQuery, useCreateProjectMutation, useUpdateProjectMutation,
+  useCompleteProjectMutation, useDeleteProjectPermanentlyMutation,
   useScopesQuery, useCreateScopeMutation, useExpensesQuery, useCreateExpenseMutation, useCancelExpenseMutation,
   useUsersQuery, useCreateUserMutation, useUpdateUserMutation, useSetUserStatusMutation, useUserAccessQuery,
   useProjectAccessQuery, useGrantAccessMutation, useChangeAccessMutation, useRemoveAccessMutation,
