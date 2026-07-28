@@ -68,6 +68,9 @@ export class UsersService {
     if (dto.role && dto.role !== before.role) {
       await this.audit.record(actorId, 'USER_ROLE_CHANGED', 'User', id, { from: before.role, to: dto.role });
     }
+    if (dto.name && user.name !== before.name) {
+      await this.audit.record(actorId, 'USER_NAME_CHANGED', 'User', id, { from: before.name, to: user.name });
+    }
     return user;
   }
 
