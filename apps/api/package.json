@@ -9,13 +9,13 @@
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "jest --runInBand",
     "test:e2e": "jest --config test/jest-e2e.json --runInBand",
-    "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && nest build",
-    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
-    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
-    "prisma:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "postinstall": "tsx scripts/run-prisma.ts generate",
+    "vercel-build": "tsx scripts/run-prisma.ts generate && tsx scripts/run-prisma.ts migrate deploy && nest build",
+    "prisma:generate": "dotenv -e ../../.env -- tsx scripts/run-prisma.ts generate",
+    "prisma:migrate": "dotenv -e ../../.env -- tsx scripts/run-prisma.ts migrate dev",
+    "prisma:deploy": "dotenv -e ../../.env -- tsx scripts/run-prisma.ts migrate deploy",
     "prisma:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "prisma:studio": "dotenv -e ../../.env -- prisma studio"
+    "prisma:studio": "dotenv -e ../../.env -- tsx scripts/run-prisma.ts studio"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -53,8 +53,5 @@
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

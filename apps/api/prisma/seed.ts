@@ -1,7 +1,8 @@
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { requireDatabaseUrl } from '../src/common/database-url';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ datasourceUrl: requireDatabaseUrl() });
 
 async function main() {
   const name = process.env.ADMIN_NAME ?? 'Administrador';
@@ -25,6 +26,8 @@ async function main() {
       create: { name: category }
     });
   }
+
+  console.log('Seed concluído com sucesso.');
 }
 
 main()
