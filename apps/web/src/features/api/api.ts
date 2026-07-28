@@ -105,6 +105,10 @@ export const api = createApi({
     createUser: builder.mutation<User, Record<string, unknown>>({
       query: (body) => ({ url: '/admin/users', method: 'POST', body }), invalidatesTags: ['User']
     }),
+    updateUser: builder.mutation<User, { id: string; name: string }>({
+      query: ({ id, name }) => ({ url: `/admin/users/${id}`, method: 'PATCH', body: { name } }),
+      invalidatesTags: ['User']
+    }),
     setUserStatus: builder.mutation<User, { id: string; status: string }>({
       query: ({ id, status }) => ({ url: `/admin/users/${id}/status`, method: 'PATCH', body: { status } }), invalidatesTags: ['User']
     }),
@@ -148,7 +152,7 @@ export const {
   useLoginMutation, useChangePasswordMutation, useDashboardQuery, useProjectDashboardQuery,
   useProjectsQuery, useProjectQuery, useCreateProjectMutation, useUpdateProjectMutation,
   useScopesQuery, useCreateScopeMutation, useExpensesQuery, useCreateExpenseMutation, useCancelExpenseMutation,
-  useUsersQuery, useCreateUserMutation, useSetUserStatusMutation, useUserAccessQuery,
+  useUsersQuery, useCreateUserMutation, useUpdateUserMutation, useSetUserStatusMutation, useUserAccessQuery,
   useProjectAccessQuery, useGrantAccessMutation, useChangeAccessMutation, useRemoveAccessMutation,
   useSuppliersQuery, useCreateSupplierMutation, useCategoriesQuery, useCreateCategoryMutation, useAuditQuery
 } = api;
