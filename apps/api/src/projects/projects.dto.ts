@@ -1,5 +1,5 @@
 import { ProjectStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { IsMoneyString } from '../common/validation';
 
 export class CreateProjectDto {
@@ -20,4 +20,11 @@ export class UpdateProjectDto {
   @IsOptional() @IsDateString() expectedEndDate?: string;
   @IsOptional() @IsEnum(ProjectStatus) status?: ProjectStatus;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+}
+
+export class DeleteProjectDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(140)
+  confirmation: string;
 }
